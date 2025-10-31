@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Магическая Вращающаяся Тыква (Большая) с Музыкой</title>
+    
+    <style>
+        /* --- Общие стили и фон --- */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #282c34;
+            flex-direction: column;
+            font-family: Arial, sans-serif;
+            overflow: hidden; 
+        }
+
+        /* --- Контейнер для позиционирования  --- */
+        .pumpkin-wrapper {
+            position: relative;
+            cursor: pointer;
+            display: flex; 
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- Магическое Облако (Вращающийся Элемент) --- */
+        .magic-cloud {
+            width: 280px; /* Увеличен размер */
+            height: 280px; /* Увеличен размер */
+            background: linear-gradient(45deg, #a8c0ff, #3f2b96); 
+            border-radius: 50%;
+            box-shadow: 0 0 50px rgba(170, 200, 255, 0.9), inset 0 0 20px rgba(255, 255, 255, 0.6); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: transform 3s ease-out; 
+            border: 5px solid rgba(255, 255, 255, 0.9); /* Утолщена рамка */
+        }
+
+        /* --- Тыква внутри Облака (Увеличена) --- */
+        .pumpkin-emoji {
+            font-size: 150px; /* Увеличен размер эмодзи */
+            z-index: 15; 
+            position: relative;
+            animation: pulse 1s infinite alternate; 
+        }
+
+        /* --- Анимации (без изменений) --- */
+        @keyframes spin-cloud {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        .magic-cloud.rotating {
+            animation: spin-cloud 0.5s linear infinite; 
+        }
+
+        /* --- Облако с Результатом (Увеличено) --- */
+        .number-result-cloud {
+            position: absolute;
+            top: -100px; /* Скорректировано положение над увеличенным облаком */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #fff;
+            color: #333;
+            padding: 15px 25px; /* Увеличен padding */
+            border-radius: 30px; /* Увеличен radius */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            opacity: 0; 
+            transition: opacity 0.5s, top 0.5s; 
+            font-weight: bold;
+            font-size: 2.5em; /* Увеличен размер шрифта */
+            z-index: 30; 
+            border: 3px solid #ff7518;
+            white-space: nowrap;
+        }
+
+        /* Класс для отображения облака с числом */
+        .number-result-cloud.show {
+            opacity: 1;
+            top: -140px; /* Скорректировано положение при появлении */
+        }
+
+        /* Информационный текст */
+        .info-text {
+            color: white;
+            margin-top: 30px;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        /* Стиль для сообщения о сбросе */
+        .reset-message {
+            color: #ffcc00; /* Желтый цвет */
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="pumpkin-wrapper" onclick="spinMagicCloud()">
+        <div id="numberResultCloud" class="number-result-cloud">?</div>
+        <div id="magicPumpkinCloud" class="magic-cloud">
+            <span class="pumpkin-emoji">🎃</span>
+        </div>
+    </div>
+
+    <audio id="spinSound" src="spin.mp3" preload="auto"></audio>
+
+    <p class="info-text">Нажмите на тыкву — получишь результат!</p>
+    <p id="resetMessage" class="info-text reset-message" style="display:none;"></p>
+
+    <script>
+        let isSpinning = false;
+        // 1. Создаем массив всех возможных чисел (от 2 до 11)
+        let availableNumbers = [3, 5, 7];
+
+        // 2. Функция для перемешивания массива (алгоритм Фишера-Йейтса)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        // Перемешиваем массив при загрузке
+        shuffleArray(availableNumbers);
+
+        function spinMagicCloud() {
+            const magicCloud = document.getElementById('magicPumpkinCloud');
+            const resultCloud = document.getElementById('numberResultCloud');
+            const resetMessage = document.getElementById('resetMessage');
+            const audio = document.getElementById('spinSound'); // <-- Получаем аудиоэлемент
+            
+            if (isSpinning) {
+                return; 
+            }
+
+            // Проверка: Если числа закончились
+            if (availableNumbers.length === 0) {
+                resetMessage.textContent = "Вот и всё 👻 ";
+                resetMessage.style.display = 'block';
+
+                // Сброс и перемешивание массива
+                availableNumbers = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+                shuffleArray(availableNumbers);
+                
+                // Краткое ожидание
+                setTimeout(() => {
+                    resetMessage.style.display = 'none';
+                    isSpinning = false; 
+                }, 4000);
+                
+                return; 
+            }
+
+            isSpinning = true;
+            resetMessage.style.display = 'none';
+
+            // 1. Скрываем результат
+            resultCloud.classList.remove('show');
+            resultCloud.textContent = '?';
+
+            // 2. Запускаем вращение и музыку
+            magicCloud.classList.add('rotating');
+            const randomTurns = Math.floor(Math.random() * 4); 
+            magicCloud.style.transform = `rotate(${randomTurns}turn)`; 
+            
+            // 🎃 Запускаем музыку
+            audio.play().catch(error => {
+                // Обработка возможной ошибки, если браузер блокирует автовоспроизведение
+                console.log("Не удалось воспроизвести звук:", error);
+            }); 
+
+            const spinDuration = 1895; 
+
+            setTimeout(() => {
+                // 4. Останавливаем быстрое вращение
+                magicCloud.classList.remove('rotating');
+                
+                // 🛑 Останавливаем музыку и сбрасываем ее на начало
+                audio.pause();
+                audio.currentTime = 0;
+                
+                // 5. Берем ПЕРВОЕ число из перемешанного массива
+                const randomNumber = availableNumbers.shift(); 
+
+                // 6. Отображаем результат
+                resultCloud.textContent = randomNumber;
+                resultCloud.classList.add('show');
+                
+                // 7. Сброс для следующего запуска
+                isSpinning = false;
+                setTimeout(() => {
+                    magicCloud.style.transform = `rotate(0deg)`; 
+                }, 100); 
+
+            }, spinDuration);
+        }
+    </script>
+</body>
+</html>
